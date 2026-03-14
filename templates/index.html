@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medibot Pro AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="chat-wrapper">
+        <div class="chat-sidebar">
+            <h2>Medibot AI</h2>
+            <p>Votre assistant médical virtuel.</p>
+        </div>
+
+        <div class="chat-main">
+            <div class="chat-header">
+                <h3>Assistant Médical Actif</h3>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot">
+                    <div class="msg-content">
+                        Bonjour ! Je suis Medibot. Posez-moi vos questions médicales.
+                    </div>
+                    <div class="msg-time">À l'instant</div>
+                </div>
+            </div>
+
+            <div id="typing" class="typing-indicator">
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+            </div>
+
+            <div class="chat-input">
+                <input type="text" id="userInput" placeholder="Décrivez vos symptômes..." autocomplete="off">
+                <button id="sendBtn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chatMessages');
+        const userInput = document.getElementById('userInput');
+        const typing = document.getElementById('typing');
+
+        userInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") sendMessage();
+        });
+
+        async function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            appendMessage('user', text);
+            userInput.value = '';
+            typing.style.display = 'flex';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            try {
+                const response = await fetch("/get", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: "msg=" + encodeURIComponent(text)
+                });
+
+                if (!response.ok) throw new Error("Erreur réseau");
+
+                const data = await response.text();
+                typing.style.display = 'none';
+                appendMessage('bot', data);
+
+            } catch (error) {
+                console.error(error);
+                typing.style.display = 'none';
+                appendMessage('bot', "Désolé, le serveur est indisponible.");
+            }
+        }
+
+        function appendMessage(sender, text) {
+            const now = new Date();
+            const timeStr = now.getHours() + ":" + now.getMinutes().toString().padStart(2,'0');
+
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${sender}`;
+            msgDiv.innerHTML = `
+                <div class="msg-content">${text}</div>
+                <div class="msg-time">${timeStr}</div>
+            `;
+            chatMessages.appendChild(msgDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    </script>
+</body>
+</html>
